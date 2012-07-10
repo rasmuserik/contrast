@@ -28,57 +28,23 @@ function syncFnFactory(callback) {
 
 // ## Graphic files and configuration
 
+/*
+'figures/blueyellow.png',
+figures/char.png
+figures/rock.png
+*/
 // tile files
 var ground = [
-    "./planetcute/ground/Grass Block.png",
-    "./planetcute/ground/Dirt Block.png",
+    "./figures/grass.png",
     ];
 
-var misc = [
-    "./planetcute/ground/Stone Block.png",
-    "./planetcute/ground/Brown Block.png",
-    "./planetcute/ground/Wall Block.png",
-    "./planetcute/ground/Plain Block.png",
-    "./planetcute/ground/Wall Block Tall.png",
-    "./planetcute/ground/Stone Block Tall.png",
-    "./planetcute/ground/Wood Block.png",
-    "./planetcute/ground/Water Block.png",
-
-    "./planetcute/misc/Window Tall.png",
-    "./planetcute/misc/Roof South.png",
-    "./planetcute/misc/Door Tall Closed.png",
-    "./planetcute/misc/SpeechBubble.png",
-    "./planetcute/misc/Roof North.png",
-    "./planetcute/misc/Roof West.png",
-    "./planetcute/misc/Door Tall Open.png",
-    "./planetcute/misc/Roof South East.png",
-    "./planetcute/misc/Roof North East.png",
-    "./planetcute/misc/Roof East.png",
-    "./planetcute/misc/Chest Lid.png",
-    "./planetcute/misc/Roof South West.png",
-    "./planetcute/misc/Roof North West.png"];
-
+var contrast = 'figures/contrast.png';
 var items = [
-    "./planetcute/thing/Heart.png",
-    "./planetcute/thing/Rock.png",
-    "./planetcute/thing/Gem Orange.png",
-    "./planetcute/thing/Star.png",
-    "./planetcute/thing/Tree Ugly.png",
-    "./planetcute/thing/Gem Blue.png",
-    "./planetcute/thing/Tree Tall.png",
-    "./planetcute/thing/Chest Closed.png",
-    "./planetcute/thing/Tree Short.png",
-    "./planetcute/thing/Selector.png",
-    "./planetcute/thing/Chest Open.png",
-    "./planetcute/thing/Key.png",
-    "./planetcute/thing/Gem Green.png"];
+    contrast,
+    'figures/blueyellow.png',
+    './figures/rock.png'];
 var chars = [
-    "./planetcute/char/Character Boy.png",
-    "./planetcute/char/Character Cat Girl.png",
-    "./planetcute/char/Character Pink Girl.png",
-    "./planetcute/char/Enemy Bug.png",
-    "./planetcute/char/Character Horn Girl.png",
-    "./planetcute/char/Character Princess Girl.png"];
+    './figures/char.png'];
 
 // ### Random dummy world
 
@@ -101,8 +67,9 @@ world.get = function(x, y) {
         tile.surface = [];
         tile.units = {};
         tile.z = Math.random();
-        tile.surface.push(ground[Math.abs(Math.random() * Math.random() * x*y|0) % ground.length]);
-        tile.surface.push("./planetcute/thing/Rock.png");
+        //tile.surface.push(ground[Math.abs(Math.random() * Math.random() * x*y|0) % ground.length]);
+        //tile.surface.push("./planetcute/thing/Rock.png");
+        tile.surface.push('./figures/rock.png');
         worldcache[pos] = tile;
     }
     return worldcache[pos];
@@ -137,9 +104,10 @@ function Unit(img, x, y) {
     return unit;
 }
 
-Unit("./planetcute/thing/Selector.png", 0, 0);
+Unit('figures/blueyellow.png', 0, 0);
+
 // ### Main character
-var mainCharacter = Unit("./planetcute/char/Character Princess Girl.png", 0, 0);
+var mainCharacter = Unit("./figures/char.png", 0, 0);
 
 charSpeed = 600;
 jumpHeight = 1;
@@ -154,6 +122,9 @@ mainCharacter.move = function(dx,dy) {
     if(!world.get(x,y).passable) {
         return;
     }
+    oiSound = document.createElement('audio'); 
+    oiSound.setAttribute('src', 'audio/oi.wav'); 
+    oiSound.play();
     var that = this;
     var startMove = Date.now();
     this.moving = true;
@@ -162,7 +133,7 @@ mainCharacter.move = function(dx,dy) {
         that.moveTo(x, y);
         that.z = 0;
         that.moving = false;
-        if(world.get(x,y).surface[1] === "./planetcute/thing/Star.png") {
+        if(world.get(x,y).surface[1] === contrast) {
             world.get(x,y).surface.pop();
         }
 
@@ -183,6 +154,8 @@ mainCharacter.move = function(dx,dy) {
 }
 
 
+// ## Sound Effects
+
 // ## View
 // view of 6x6 view
 
@@ -201,7 +174,7 @@ function initView(callback) {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
     var syncFn = syncFnFactory(callback);
-    async.forEach(ground.concat(misc, items, chars), loadImage, syncFn());
+    async.forEach(ground.concat(items, chars), loadImage, syncFn());
     viewWidth = canvas.width;
     viewHeight = canvas.height;
 }
@@ -316,7 +289,7 @@ drawLoop();
 function makeMaze() {
     var next = [{x:0,y:0}];
     var i;
-    for(i=0;i<300;++i) {
+    for(i=0;i<1000;++i) {
         var curpos = (1 - Math.random() * Math.random() * Math.random() * Math.random()) * next.length % next.length |0;
         var current = next[curpos];
         var x = current.x;
@@ -329,17 +302,18 @@ function makeMaze() {
             freespace += world.get(x-1,y).passable?0:1
             freespace += world.get(x,y-1).passable?0:1
             freespace += world.get(x,y+1).passable?0:1
-            if(freespace > 2 || (Math.random() < 0.3)) {
+            if(freespace > 2 || (Math.random() < 0.5)) {
                 ctx.fillRect(250+x, 250+y,1,1);
-                tile.z = 0;
+                tile.z = Math.random() < .05?.5: 0;
                 tile.passable = true;
                 tile.surface.pop();
+                tile.surface.push('./figures/grass.png');
                 next.push({x:x+1,y:y});
                 next.push({x:x-1,y:y});
                 next.push({x:x,y:y+1});
                 next.push({x:x,y:y-1});
-                if(Math.random() < .1) {
-                    tile.surface.push("./planetcute/thing/Star.png");
+                if(Math.random() < .3) {
+                    tile.surface.push(contrast);
                 }
             }
             tile.visited = true;

@@ -17,7 +17,11 @@
         </style>
     </head>
     <body>
-        <canvas style="position:absolute;top:0;left:0;" id="canvas" width="600" height="480"></canvas>
+        <audio autoplay="autoplay" loop="loop">
+          <source src="audio/jazzy.ogg" type="audio/ogg" />
+          <source src="audio/jazzy.mp3" type="audio/mpeg" />
+        </audio> 
+        <canvas style="position:relative;top:0;left:0;" id="canvas" width="600" height="480"></canvas>
         <script src="lib/async.js"></script>
         <script src="main.js"></script>
     </body>
