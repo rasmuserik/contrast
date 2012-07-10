@@ -99,10 +99,7 @@ world.get = function(x, y) {
         tile.surface = [];
         tile.units = {};
         tile.z = Math.random();
-        tile.surface.push(ground[Math.abs(x*y|0) % ground.length]);
-        if(Math.random() < 0.2) {
-            tile.surface.push(items[items.length * Math.random() | 0]);
-        }
+        tile.surface.push(ground[8 + 0 *Math.abs(x*y|0) % ground.length]);
         worldcache[pos] = tile;
     }
     return worldcache[pos];
@@ -137,15 +134,11 @@ function Unit(img, x, y) {
     return unit;
 }
 
-//Unit("./planetcute/char/Character Princess Girl.png", 0, -0.1);
-//Unit("./planetcute/char/Character Princess Girl.png", 3, 0.1);
-//var marker = Unit("./planetcute/thing/Selector.png", 0, 0);
-//var Marker = Unit("./planetcute/thing/Selector.png", 0, 0);
-
+// ### Main character
 var mainCharacter = Unit("./planetcute/char/Character Princess Girl.png", 0, 0);
 
-charSpeed = 300;
-jumpHeight = 100.5;
+charSpeed = 600;
+jumpHeight = 1;
 mainCharacter.move = function(dx,dy) {
     if(this.moving) {
         return;
@@ -160,6 +153,7 @@ mainCharacter.move = function(dx,dy) {
 
     setTimeout(function() {
         that.moveTo(x, y);
+        that.z = 0;
         that.moving = false;
     }, charSpeed);
 
@@ -168,14 +162,13 @@ mainCharacter.move = function(dx,dy) {
         var t = (Date.now() - startMove)/charSpeed;
         var currentx = prevx + t * dx;
         var currenty = prevy + t * dy;
-        var z = 4*((t-0.5)*(t-0.5)-.25)*jumpHeight;
-        this.z = z;
-        console.log(z);
+        var z = -4*((t-0.5)*(t-0.5)-.25)*jumpHeight;
+        that.z = z;
         that.moveTo(currentx,currenty);
     }
     this.getX = function() { updatePos(); return this.x; }
     this.getY = function() { updatePos(); return this.y; }
-    this.getZ = function() { updatePos(); return this.z; }
+    this.getZ = function() { updatePos(); zzz.push('t'+this.z); return this.z; }
 }
 
 
@@ -220,12 +213,11 @@ function drawImage(filename, x, y) {
 }
 
 // ### Actually draw the view
+zzz = [];
 
 function drawView(xpos, ypos) {
 
-    function toScreenX(xpos,ypos,z) {
-        z = z || 0;
-        z = z + world.getZ(xpos, ypos);
+    function toScreenX(xpos,ypos) {
         return (xpos - x0World) * tileWidth +x0;
     }
 
@@ -250,11 +242,10 @@ function drawView(xpos, ypos) {
         units.sort(function(a,b) { return a.y - b.y; });
         units.forEach(function(unit) {
             var ux = unit.getX(), uy = unit.getY(), uz = unit.getZ();
+            drawImage(unit.img, toScreenX(ux, uy, uz), toScreenY(ux, uy, uz));
             if(Math.round(ux) !== x || Math.round(uy) !== y) {
                 delete tile.units[unit.id];
-            } else {
-                drawImage(unit.img, toScreenX(ux, uy, uz), toScreenY(ux, uy, uz));
-            }
+            } 
         });
     }
 
@@ -286,8 +277,6 @@ function drawView(xpos, ypos) {
             drawTileUnits(x, y);
         }
     }
-
-    ctx.fillRect(viewWidth/2-3, viewHeight/2-3, 6, 6);
 }
 
 
@@ -313,19 +302,11 @@ document.body.onkeydown = function(ev) {
 initView(function(){});
 var x=0, y=0, t0=Date.now();
 function drawLoop() {
-    setTimeout(main, 1000/30);
-}
-function main() {
-    t0 = Date.now();
-    x += 0.02;
-    y += 0;
     drawView(mainCharacter.getX(), mainCharacter.getY());
-    //console.log('rendertime: ', Date.now()-t0);
-//    console.log(x,y);
-    //setTimeout(main, 1000/60);
-    setTimeout(main, 30);
-};
-setTimeout(main, 100);
+    //drawView(0,0);
+    setTimeout(drawLoop, 30);
+}
+drawLoop();
 
 // # EOF
 })();
