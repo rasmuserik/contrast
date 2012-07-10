@@ -69,7 +69,8 @@ var items = [
     "./planetcute/thing/Selector.png",
     "./planetcute/thing/Chest Open.png",
     "./planetcute/thing/Key.png",
-    "./planetcute/thing/Gem Green.png",
+    "./planetcute/thing/Gem Green.png"];
+var chars = [
     "./planetcute/char/Character Boy.png",
     "./planetcute/char/Character Cat Girl.png",
     "./planetcute/char/Character Pink Girl.png",
@@ -131,7 +132,7 @@ function initView(callback) {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
     var syncFn = syncFnFactory(callback);
-    async.forEach(ground.concat(misc, items), loadImage, syncFn());
+    async.forEach(ground.concat(misc, items, chars), loadImage, syncFn());
     viewWidth = canvas.width;
     viewHeight = canvas.height;
 }
@@ -155,7 +156,7 @@ function drawImage(filename, x, y) {
 
 // ### Draw a single tile and all objects on it
 
-function drawTile(tile, x0, y0) {
+function drawTileOld(tile, x0, y0, z0) {
     var y = y0 - tile.getZ() * tileDepth | 0;
     var x = x0;
     var surface = tile.getSurfaceImages();
@@ -167,6 +168,19 @@ function drawTile(tile, x0, y0) {
 // ### Actually draw the view
 
 function drawView(xpos, ypos) {
+
+    function toScreenX(xpos,ypos,z) {
+        z = z || 0;
+        z = z + world.getZ(xpos, ypos);
+        return (xpos - x0World) * tileWidth +x0;
+    }
+
+    function toScreenY(xpos,ypos,z) {
+        z = z || 0;
+        z = z + world.getZ(xpos, ypos);
+        return (ypos-y0World) * tileHeight +y0 - z*tileDepth - tileYOffset;
+    }
+
     ctx.fillRect(0,0,1000,1000);
 
     var x0World = Math.round(xpos) - 3;
@@ -175,13 +189,17 @@ function drawView(xpos, ypos) {
 
     x0 = Math.round((Math.round(xpos) - xpos - .5) * tileWidth);
     y0 = Math.round((Math.round(ypos) - ypos - .5) * tileHeight + world.getZ(xpos,ypos)*tileDepth);
+
     for(dxWorld = 0; dxWorld<7; ++dxWorld) {
-        for(dyWorld = -1; dyWorld<8; ++dyWorld) {
+        for(dyWorld = 0; dyWorld<9; ++dyWorld) {
             xWorld = x0World + dxWorld;
             yWorld = y0World + dyWorld;
-            drawTile(world.get(xWorld,yWorld), x0 + dxWorld*tileWidth, y0 + dyWorld*tileHeight);
+            drawTileOld(world.get(xWorld,yWorld), x0 + dxWorld*tileWidth, y0 + dyWorld*tileHeight);
         }
     }
+    drawImage( "./planetcute/thing/Selector.png",
+            toScreenX(Math.round(xpos), Math.round(ypos), 0), 
+            toScreenY(Math.round(xpos), Math.round(ypos), 0));
 
     ctx.fillRect(viewWidth/2-3, viewHeight/2-3, 6, 6);
 }
