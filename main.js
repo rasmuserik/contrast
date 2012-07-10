@@ -271,20 +271,11 @@ function drawView(xpos, ypos) {
     var xWorld, yWorld;
 
 
-    //marker.moveTo((xpos), (ypos));
-    //marker.moveTo(Math.round(xpos), Math.round(ypos));
-    for(dyWorld = 0; dyWorld<9; ++dyWorld) {
-        for(dxWorld = 0; dxWorld<7; ++dxWorld) {
-            xWorld = x0World + dxWorld;
-            yWorld = y0World + dyWorld;
-            drawTile(xWorld, yWorld);
-        }
-    }
-    for(var y = yi-4; y < yi+4; ++y) {
-        for(var x = xi - 3; x < xi + 3; ++x) {
+    for(var y = yi-4; y < yi+5; ++y) {
+        for(var x = xi - 3; x < xi + 4; ++x) {
             drawTile(x, y);
         }
-        for(var x = xi - 3; x < xi + 3; ++x) {
+        for(var x = xi - 3; x < xi + 4; ++x) {
             drawTileUnits(x, y);
         }
     }
