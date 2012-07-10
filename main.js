@@ -86,8 +86,8 @@ world.get = function(x, y) {
     if(!worldcache[pos]) {
         var tile = Object.create(Tile);
         tile.surface = [];
-        tile.z = 0; // Math.random();
-        tile.surface.push(ground[ground.length * Math.random() | 0]);
+        tile.z = Math.random();
+        tile.surface.push(ground[Math.abs(x*y|0) % ground.length]);
         if(Math.random() < 0.2) {
             tile.surface.push(items[items.length * Math.random() | 0]);
         }
@@ -110,6 +110,8 @@ var tileWidth = 100;
 var tileYOffset = 50;
 var tileHeight = 80;
 var tileDepth = 40;
+var viewWidth;
+var viewHeight;
 
 
 // ### Initialisation
@@ -120,7 +122,10 @@ function initView(callback) {
     ctx = canvas.getContext('2d');
     var syncFn = syncFnFactory(callback);
     async.forEach(ground.concat(misc, items), loadImage, syncFn());
+    viewWidth = canvas.width;
+    viewHeight = canvas.height;
 }
+
 
 // ### Utility for loading/drawing images
 
@@ -145,7 +150,6 @@ function drawTile(tile, x0, y0) {
     var x = x0;
     var surface = tile.getSurfaceImages();
     for(var i = 0; i < surface.length; ++i) {
-        console.log(surface, i);
         drawImage(surface[i], x, y - tileYOffset);
         y -= tileDepth;
     }
@@ -153,14 +157,31 @@ function drawTile(tile, x0, y0) {
 
 // ### Actually draw the view
 
-function drawView(x, y) {
-    console.log(Object.keys(images));
+function drawView(xpos, ypos) {
     ctx.fillRect(0,0,1000,1000);
-    x0 = - tileWidth/2;
-    y0 = - tileHeight/2;
-    for(x=0;x<7;++x) for(y=0;y<7;++y) {
-        drawTile(world.get(x,y), x0 + x*tileWidth, y0 + y*tileHeight);
+
+    var x0World = Math.round(xpos) - 3;
+    var y0World = Math.round(ypos) - 3;
+    var xWorld, yWorld;
+    var x = Math.floor(xpos);
+    var y = Math.floor(ypos);
+    var z = 
+        world.get(x, y).getZ() * (1-xpos+x) * (1-ypos+y) +
+        world.get(x+1, y).getZ() * (xpos-x) * (1-ypos+y) +
+        world.get(x, y+1).getZ() * (1-xpos+x) * (ypos-y) +
+        world.get(x+1, y+1).getZ() * (xpos-x) * (ypos-y) ;
+
+    x0 = Math.round((Math.round(xpos) - xpos - .5) * tileWidth);
+    y0 = Math.round((Math.round(ypos) - ypos - .5) * tileHeight + z*tileDepth);
+    for(dxWorld = 0; dxWorld<7; ++dxWorld) {
+        for(dyWorld = -1; dyWorld<8; ++dyWorld) {
+            xWorld = x0World + dxWorld;
+            yWorld = y0World + dyWorld;
+            drawTile(world.get(xWorld,yWorld), x0 + dxWorld*tileWidth, y0 + dyWorld*tileHeight);
+        }
     }
+
+    ctx.fillRect(viewWidth/2-3, viewHeight/2-3, 6, 6);
 }
 
 
@@ -169,7 +190,18 @@ function drawView(x, y) {
 // ### Generate Random Map
 // ### Main
 
-initView(function() {setTimeout(drawView, 100)});;
+initView(function(){});
+    var x=0, y=0, t0=Date.now();
+function main() {
+    t0 = Date.now();
+    x += 0.01;
+    y += 0.001;
+    drawView(x, y);
+    //console.log('rendertime: ', Date.now()-t0);
+//    console.log(x,y);
+    setTimeout(main, 1000/30);
+};
+setTimeout(main, 100);
 
 // # EOF
 })();
