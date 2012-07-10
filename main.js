@@ -30,18 +30,20 @@ function syncFnFactory(callback) {
 
 // tile files
 var ground = [
+    "./planetcute/ground/Grass Block.png",
+    "./planetcute/ground/Dirt Block.png",
+    ];
+
+var misc = [
     "./planetcute/ground/Stone Block.png",
+    "./planetcute/ground/Brown Block.png",
+    "./planetcute/ground/Wall Block.png",
     "./planetcute/ground/Plain Block.png",
     "./planetcute/ground/Wall Block Tall.png",
     "./planetcute/ground/Stone Block Tall.png",
-    "./planetcute/ground/Brown Block.png",
-    "./planetcute/ground/Wall Block.png",
-    "./planetcute/ground/Dirt Block.png",
     "./planetcute/ground/Wood Block.png",
-    "./planetcute/ground/Grass Block.png",
-    "./planetcute/ground/Water Block.png"];
+    "./planetcute/ground/Water Block.png",
 
-var misc = [
     "./planetcute/misc/Window Tall.png",
     "./planetcute/misc/Roof South.png",
     "./planetcute/misc/Door Tall Closed.png",
@@ -99,7 +101,8 @@ world.get = function(x, y) {
         tile.surface = [];
         tile.units = {};
         tile.z = Math.random();
-        tile.surface.push(ground[8 + 0 *Math.abs(x*y|0) % ground.length]);
+        tile.surface.push(ground[Math.abs(Math.random() * Math.random() * x*y|0) % ground.length]);
+        tile.surface.push("./planetcute/thing/Rock.png");
         worldcache[pos] = tile;
     }
     return worldcache[pos];
@@ -134,6 +137,7 @@ function Unit(img, x, y) {
     return unit;
 }
 
+Unit("./planetcute/thing/Selector.png", 0, 0);
 // ### Main character
 var mainCharacter = Unit("./planetcute/char/Character Princess Girl.png", 0, 0);
 
@@ -147,6 +151,9 @@ mainCharacter.move = function(dx,dy) {
     var prevy = this.y
     var x = prevx + dx;
     var y = prevy + dy;
+    if(!world.get(x,y).passable) {
+        return;
+    }
     var that = this;
     var startMove = Date.now();
     this.moving = true;
@@ -155,6 +162,10 @@ mainCharacter.move = function(dx,dy) {
         that.moveTo(x, y);
         that.z = 0;
         that.moving = false;
+        if(world.get(x,y).surface[1] === "./planetcute/thing/Star.png") {
+            world.get(x,y).surface.pop();
+        }
+
     }, charSpeed);
 
     function updatePos() {
@@ -307,6 +318,44 @@ function drawLoop() {
     setTimeout(drawLoop, 30);
 }
 drawLoop();
+
+
+
+// ## Generate maze
+function makeMaze() {
+    var next = [{x:0,y:0}];
+    var i;
+    for(i=0;i<300;++i) {
+        var curpos = (1 - Math.random() * Math.random() * Math.random() * Math.random()) * next.length % next.length |0;
+        var current = next[curpos];
+        var x = current.x;
+        var y = current.y;
+        next[curpos] = next.pop();
+        var tile = world.get(current.x, current.y);
+        if(!tile.visited) {
+            var freespace = 0;
+            freespace += world.get(x+1,y).passable?0:1
+            freespace += world.get(x-1,y).passable?0:1
+            freespace += world.get(x,y-1).passable?0:1
+            freespace += world.get(x,y+1).passable?0:1
+            if(freespace > 2 || (Math.random() < 0.3)) {
+                ctx.fillRect(250+x, 250+y,1,1);
+                tile.z = 0;
+                tile.passable = true;
+                tile.surface.pop();
+                next.push({x:x+1,y:y});
+                next.push({x:x-1,y:y});
+                next.push({x:x,y:y+1});
+                next.push({x:x,y:y-1});
+                if(Math.random() < .1) {
+                    tile.surface.push("./planetcute/thing/Star.png");
+                }
+            }
+            tile.visited = true;
+        }
+    }
+}
+makeMaze();
 
 // # EOF
 })();
