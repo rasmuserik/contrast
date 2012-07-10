@@ -80,8 +80,8 @@ var chars = [
 
 // ### Random dummy world
 
-var world = {};
-var worldcache = {};
+world = {};
+worldcache = {};
 world.getZ = function(xpos,ypos) {
     var x = Math.floor(xpos);
     var y = Math.floor(ypos);
@@ -93,10 +93,11 @@ world.getZ = function(xpos,ypos) {
     return z;
 };
 world.get = function(x, y) {
-    var pos = x + ',' + y;
+    var pos = Math.round(x) + ',' + Math.round(y);
     if(!worldcache[pos]) {
         var tile = Object.create(Tile);
         tile.surface = [];
+        tile.units = {};
         tile.z = Math.random();
         tile.surface.push(ground[Math.abs(x*y|0) % ground.length]);
         if(Math.random() < 0.2) {
@@ -112,10 +113,79 @@ var Tile = {};
 Tile.getSurfaceImages = function() { return this.surface; };
 Tile.getZ = function() { return this.z; };
 
+// ## Unit
+
+var nextUnitSerialNumber = 1;
+
+var unitPrototype = {};
+
+unitPrototype.moveTo = function(x,y) {
+    this.x = x;
+    this.y = y;
+    world.get(x,y).units[this.id] = this;
+}
+unitPrototype.getX = function() { return this.x; };
+unitPrototype.getY = function() { return this.y; };
+unitPrototype.getZ = function() { return this.z; };
+unitPrototype.z = 0;
+
+function Unit(img, x, y) {
+    var unit = Object.create(unitPrototype);
+    unit.id = nextUnitSerialNumber++;
+    unit.img = img;
+    unit.moveTo(x,y);
+    return unit;
+}
+
+//Unit("./planetcute/char/Character Princess Girl.png", 0, -0.1);
+//Unit("./planetcute/char/Character Princess Girl.png", 3, 0.1);
+//var marker = Unit("./planetcute/thing/Selector.png", 0, 0);
+//var Marker = Unit("./planetcute/thing/Selector.png", 0, 0);
+
+var mainCharacter = Unit("./planetcute/char/Character Princess Girl.png", 0, 0);
+
+charSpeed = 300;
+jumpHeight = 100.5;
+mainCharacter.move = function(dx,dy) {
+    if(this.moving) {
+        return;
+    }
+    var prevx = this.x
+    var prevy = this.y
+    var x = prevx + dx;
+    var y = prevy + dy;
+    var that = this;
+    var startMove = Date.now();
+    this.moving = true;
+
+    setTimeout(function() {
+        that.moveTo(x, y);
+        that.moving = false;
+    }, charSpeed);
+
+    function updatePos() {
+        if(!that.moving) { return; };
+        var t = (Date.now() - startMove)/charSpeed;
+        var currentx = prevx + t * dx;
+        var currenty = prevy + t * dy;
+        var z = 4*((t-0.5)*(t-0.5)-.25)*jumpHeight;
+        this.z = z;
+        console.log(z);
+        that.moveTo(currentx,currenty);
+    }
+    this.getX = function() { updatePos(); return this.x; }
+    this.getY = function() { updatePos(); return this.y; }
+    this.getZ = function() { updatePos(); return this.z; }
+}
+
+
 // ## View
 // view of 6x6 view
 
-// ### Tile info
+
+// ### Initialisation
+var canvas;
+var ctx;
 // tile dimensions, (depth is z-height mapped to y-axis)
 var tileWidth = 100;
 var tileYOffset = 90;
@@ -123,11 +193,6 @@ var tileHeight = 80;
 var tileDepth = 40;
 var viewWidth;
 var viewHeight;
-
-
-// ### Initialisation
-var canvas;
-var ctx;
 function initView(callback) {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
@@ -154,17 +219,6 @@ function drawImage(filename, x, y) {
     ctx.drawImage(images[filename], x, y);
 }
 
-// ### Draw a single tile and all objects on it
-
-function drawTileOld(tile, x0, y0, z0) {
-    var y = y0 - tile.getZ() * tileDepth | 0;
-    var x = x0;
-    var surface = tile.getSurfaceImages();
-    for(var i = 0; i < surface.length; ++i) {
-        drawImage(surface[i], x, y - tileYOffset);
-    }
-}
-
 // ### Actually draw the view
 
 function drawView(xpos, ypos) {
@@ -181,25 +235,57 @@ function drawView(xpos, ypos) {
         return (ypos-y0World) * tileHeight +y0 - z*tileDepth - tileYOffset;
     }
 
-    ctx.fillRect(0,0,1000,1000);
-
-    var x0World = Math.round(xpos) - 3;
-    var y0World = Math.round(ypos) - 3;
-    var xWorld, yWorld;
-
-    x0 = Math.round((Math.round(xpos) - xpos - .5) * tileWidth);
-    y0 = Math.round((Math.round(ypos) - ypos - .5) * tileHeight + world.getZ(xpos,ypos)*tileDepth);
-
-    for(dxWorld = 0; dxWorld<7; ++dxWorld) {
-        for(dyWorld = 0; dyWorld<9; ++dyWorld) {
-            xWorld = x0World + dxWorld;
-            yWorld = y0World + dyWorld;
-            drawTileOld(world.get(xWorld,yWorld), x0 + dxWorld*tileWidth, y0 + dyWorld*tileHeight);
+    function drawTile(x,y) {
+        var i;
+        var tile = world.get(x,y);
+        var surface = tile.getSurfaceImages();
+        for(i = 0; i < surface.length; ++i) {
+            drawImage(surface[i], toScreenX(x,y), toScreenY(x,y));
         }
     }
-    drawImage( "./planetcute/thing/Selector.png",
-            toScreenX(Math.round(xpos), Math.round(ypos), 0), 
-            toScreenY(Math.round(xpos), Math.round(ypos), 0));
+
+    function drawTileUnits(x,y) {
+        var tile = world.get(x,y);
+        var units = Object.keys(tile.units).map(function(name){ return tile.units[name]; });
+        units.sort(function(a,b) { return a.y - b.y; });
+        units.forEach(function(unit) {
+            var ux = unit.getX(), uy = unit.getY(), uz = unit.getZ();
+            if(Math.round(ux) !== x || Math.round(uy) !== y) {
+                delete tile.units[unit.id];
+            } else {
+                drawImage(unit.img, toScreenX(ux, uy, uz), toScreenY(ux, uy, uz));
+            }
+        });
+    }
+
+    ctx.fillRect(0,0,1000,1000);
+
+    var x0 = Math.round((Math.round(xpos) - xpos - .5) * tileWidth);
+    var y0 = Math.round((Math.round(ypos) - ypos - .5) * tileHeight + world.getZ(xpos,ypos)*tileDepth);
+    var x0World = Math.round(xpos) - 3;
+    var y0World = Math.round(ypos) - 3;
+    var yi = Math.round(ypos);
+    var xi = Math.round(xpos);
+    var xWorld, yWorld;
+
+
+    //marker.moveTo((xpos), (ypos));
+    //marker.moveTo(Math.round(xpos), Math.round(ypos));
+    for(dyWorld = 0; dyWorld<9; ++dyWorld) {
+        for(dxWorld = 0; dxWorld<7; ++dxWorld) {
+            xWorld = x0World + dxWorld;
+            yWorld = y0World + dyWorld;
+            drawTile(xWorld, yWorld);
+        }
+    }
+    for(var y = yi-4; y < yi+4; ++y) {
+        for(var x = xi - 3; x < xi + 3; ++x) {
+            drawTile(x, y);
+        }
+        for(var x = xi - 3; x < xi + 3; ++x) {
+            drawTileUnits(x, y);
+        }
+    }
 
     ctx.fillRect(viewWidth/2-3, viewHeight/2-3, 6, 6);
 }
@@ -207,19 +293,37 @@ function drawView(xpos, ypos) {
 
 // ## Controller
 
+document.body.onkeydown = function(ev) {
+    //console.log(ev.keyCode);
+    var keyCode = ev.keyCode;
+    if(keyCode===37) { // key left
+        mainCharacter.move(-1,0);
+    } else if(keyCode===39) { // key right
+        mainCharacter.move(1,0);
+    } else if(keyCode===38) { // key up
+        mainCharacter.move(0,-1);
+    } else if(keyCode===40) { // key down
+        mainCharacter.move(0,1);
+    }
+}
+
 // ### Generate Random Map
 // ### Main
 
 initView(function(){});
-    var x=0, y=0, t0=Date.now();
+var x=0, y=0, t0=Date.now();
+function drawLoop() {
+    setTimeout(main, 1000/30);
+}
 function main() {
     t0 = Date.now();
     x += 0.02;
     y += 0;
-    drawView(x, y);
+    drawView(mainCharacter.getX(), mainCharacter.getY());
     //console.log('rendertime: ', Date.now()-t0);
 //    console.log(x,y);
-    setTimeout(main, 1000/30);
+    //setTimeout(main, 1000/60);
+    setTimeout(main, 30);
 };
 setTimeout(main, 100);
 
