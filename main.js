@@ -32,6 +32,8 @@ function syncFnFactory(callback) {
 var ground = [
     "./planetcute/ground/Stone Block.png",
     "./planetcute/ground/Plain Block.png",
+    "./planetcute/ground/Wall Block Tall.png",
+    "./planetcute/ground/Stone Block Tall.png",
     "./planetcute/ground/Brown Block.png",
     "./planetcute/ground/Wall Block.png",
     "./planetcute/ground/Dirt Block.png",
@@ -42,8 +44,6 @@ var ground = [
 var misc = [
     "./planetcute/misc/Window Tall.png",
     "./planetcute/misc/Roof South.png",
-    "./planetcute/misc/Wall Block Tall.png",
-    "./planetcute/misc/Stone Block Tall.png",
     "./planetcute/misc/Door Tall Closed.png",
     "./planetcute/misc/SpeechBubble.png",
     "./planetcute/misc/Roof North.png",
@@ -81,6 +81,16 @@ var items = [
 
 var world = {};
 var worldcache = {};
+world.getZ = function(xpos,ypos) {
+    var x = Math.floor(xpos);
+    var y = Math.floor(ypos);
+    var z = 
+        world.get(x, y).getZ() * (1-xpos+x) * (1-ypos+y) +
+        world.get(x+1, y).getZ() * (xpos-x) * (1-ypos+y) +
+        world.get(x, y+1).getZ() * (1-xpos+x) * (ypos-y) +
+        world.get(x+1, y+1).getZ() * (xpos-x) * (ypos-y) ;
+    return z;
+};
 world.get = function(x, y) {
     var pos = x + ',' + y;
     if(!worldcache[pos]) {
@@ -107,7 +117,7 @@ Tile.getZ = function() { return this.z; };
 // ### Tile info
 // tile dimensions, (depth is z-height mapped to y-axis)
 var tileWidth = 100;
-var tileYOffset = 50;
+var tileYOffset = 90;
 var tileHeight = 80;
 var tileDepth = 40;
 var viewWidth;
@@ -151,7 +161,6 @@ function drawTile(tile, x0, y0) {
     var surface = tile.getSurfaceImages();
     for(var i = 0; i < surface.length; ++i) {
         drawImage(surface[i], x, y - tileYOffset);
-        y -= tileDepth;
     }
 }
 
@@ -163,16 +172,9 @@ function drawView(xpos, ypos) {
     var x0World = Math.round(xpos) - 3;
     var y0World = Math.round(ypos) - 3;
     var xWorld, yWorld;
-    var x = Math.floor(xpos);
-    var y = Math.floor(ypos);
-    var z = 
-        world.get(x, y).getZ() * (1-xpos+x) * (1-ypos+y) +
-        world.get(x+1, y).getZ() * (xpos-x) * (1-ypos+y) +
-        world.get(x, y+1).getZ() * (1-xpos+x) * (ypos-y) +
-        world.get(x+1, y+1).getZ() * (xpos-x) * (ypos-y) ;
 
     x0 = Math.round((Math.round(xpos) - xpos - .5) * tileWidth);
-    y0 = Math.round((Math.round(ypos) - ypos - .5) * tileHeight + z*tileDepth);
+    y0 = Math.round((Math.round(ypos) - ypos - .5) * tileHeight + world.getZ(xpos,ypos)*tileDepth);
     for(dxWorld = 0; dxWorld<7; ++dxWorld) {
         for(dyWorld = -1; dyWorld<8; ++dyWorld) {
             xWorld = x0World + dxWorld;
@@ -194,8 +196,8 @@ initView(function(){});
     var x=0, y=0, t0=Date.now();
 function main() {
     t0 = Date.now();
-    x += 0.01;
-    y += 0.001;
+    x += 0.02;
+    y += 0;
     drawView(x, y);
     //console.log('rendertime: ', Date.now()-t0);
 //    console.log(x,y);
