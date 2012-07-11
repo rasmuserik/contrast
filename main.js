@@ -28,24 +28,13 @@ function syncFnFactory(callback) {
 
 // ## Graphic files and configuration
 
-/*
-'figures/blueyellow.png',
-figures/char.png
-figures/rock.png
-*/
 // tile files
-var ground = [
-    "./figures/grass.png",
-    ];
-
-var contrast = './figures/contrast.png';
-var goal = './figures/blueyellow.png';
-var items = [
-    contrast,
-    goal,
-    './figures/rock.png'];
-var chars = [
-    './figures/char.png'];
+var groundImg = './figures/grass.png';
+var contrastImg = './figures/contrast.png';
+var goalImg = './figures/blueyellow.png';
+var charImg = './figures/char.png';
+var rockImg = './figures/rock.png';
+var imageSources = [rockImg, groundImg, contrastImg, goalImg, charImg];
 
 // ### Random dummy world
 
@@ -68,9 +57,7 @@ world.get = function(x, y) {
         tile.surface = [];
         tile.units = {};
         tile.z = Math.random();
-        //tile.surface.push(ground[Math.abs(Math.random() * Math.random() * x*y|0) % ground.length]);
-        //tile.surface.push("./planetcute/thing/Rock.png");
-        tile.surface.push('./figures/rock.png');
+        tile.surface.push(rockImg);
         worldcache[pos] = tile;
     }
     return worldcache[pos];
@@ -82,6 +69,14 @@ Tile.getSurfaceImages = function() { return this.surface; };
 Tile.getZ = function() { return this.z; };
 
 // ## Unit
+//
+// Game unit, - player moving item ...
+//
+// Functions:
+// - getX()
+// - getY()
+// - getZ()
+// - getImages()
 
 var nextUnitSerialNumber = 1;
 
@@ -95,18 +90,19 @@ unitPrototype.moveTo = function(x,y) {
 unitPrototype.getX = function() { return this.x; };
 unitPrototype.getY = function() { return this.y; };
 unitPrototype.getZ = function() { return this.z; };
+unitPrototype.getImages = function() { return this.images};
 unitPrototype.z = 0;
 
-function Unit(img, x, y) {
+function Unit(images, x, y) {
     var unit = Object.create(unitPrototype);
     unit.id = nextUnitSerialNumber++;
-    unit.img = img;
+    unit.images = images;
     unit.moveTo(x,y);
     return unit;
 }
 
 // ### Main character
-var mainCharacter = Unit("./figures/char.png", 0, 0);
+var mainCharacter = Unit([charImg], 0, 0);
 
 charSpeed = 600;
 jumpHeight = 1;
@@ -132,7 +128,7 @@ mainCharacter.move = function(dx,dy) {
         that.moveTo(x, y);
         that.z = 0;
         that.moving = false;
-        if(world.get(x,y).surface[1] === contrast) {
+        if(world.get(x,y).surface[1] === contrastImg) {
             world.get(x,y).surface.pop();
         }
 
@@ -204,7 +200,7 @@ function initView(callback) {
     canvas = document.getElementById('canvas');
     ctx = canvas.getContext('2d');
     var syncFn = syncFnFactory(callback);
-    async.forEach(ground.concat(items, chars), loadImage, syncFn());
+    async.forEach(imageSources, loadImage, syncFn());
     viewWidth = canvas.width;
     viewHeight = canvas.height;
 }
@@ -256,7 +252,12 @@ function drawView(xpos, ypos) {
         units.sort(function(a,b) { return a.y - b.y; });
         units.forEach(function(unit) {
             var ux = unit.getX(), uy = unit.getY(), uz = unit.getZ();
-            drawImage(unit.img, toScreenX(ux, uy, uz), toScreenY(ux, uy, uz));
+            var images = unit.getImages();
+            var screenX = toScreenX(ux, uy, uz);
+            var screenY = toScreenY(ux, uy, uz);
+            for(var i = 0; i < images.length; ++i) {
+                drawImage(images[i], screenX, screenY);
+            }
             if(Math.round(ux) !== x || Math.round(uy) !== y) {
                 delete tile.units[unit.id];
             } 
@@ -320,7 +321,7 @@ function makeMaze() {
     var next = [{x:0,y:0}];
     var i;
     var tile;
-    for(i=0;i<4000;++i) {
+    for(i=0;i<1000;++i) {
         var curpos = (1 - Math.random() * Math.random() * Math.random() * Math.random()) * next.length % next.length |0;
         var current = next[curpos];
         var x = current.x;
@@ -344,14 +345,14 @@ function makeMaze() {
                 next.push({x:x-1,y:y});
                 next.push({x:x+1,y:y});
                 if(Math.random() < .1) {
-                    tile.surface.push(contrast);
+                    tile.surface.push(contrastImg);
                 }
             }
             tile.visited = true;
         }
     }
     tile.passable = true;
-    tile.surface = ['./figures/grass.png', goal];
+    tile.surface = ['./figures/grass.png', goalImg];
     tile.item = true;
 }
 makeMaze();
