@@ -2,33 +2,35 @@
 
 <http://www.ludumdare.com/compo/2012/07/01/mini-ld-36-contrasts/>
 
-## Milestones
-
-- generate a random world
-    - tile: stack of things
-- 
+Game+engine is made from scratch...
 
 ## Notes
-- start out with engine compatible with plantcute-graphics
-    - model
-        - world object
-            - get (x,y) -> tile object
-        - tile object
-            - stack of things
-            - background - height + type/img
-        - character
-    - view
-        - 5x5 cutout of the world
-        - on-click map to which world coordinate clicked
-        - centering on character tile
-    - control
+- todo
+    - on-click map to which world coordinate clicked
+    - better key controls, ie move-done+button-down -> move
+    - mapping from touch/mouse-up/down in view -> tile/object-event
+    - mobile controls
+    - menu
+    - pop-up dialog
 
-
-- game-types
+- game-ideas
     - labyrinth
+    - rpg
     - bomberman
     - defence
     - sokoban
     - interactive stories
 
-- replace with own graphics
+## Dev notes/history
+
+- Jul 11
+    - code cleanup
+    - motion-blurred minimap
+- Jul 10
+    - navigation via keyboard
+    - maze-generator
+    - music/sound-effects
+    - graphics started
+- Jul 9 
+    - engine started
+    - basic drawing of random map (using planet-cute-tiles)
