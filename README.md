@@ -12,6 +12,7 @@ Game+engine is made from scratch...
     - mobile controls
     - menu
     - pop-up dialog
+    - height-map-map-generator
 
 - game-ideas
     - labyrinth
