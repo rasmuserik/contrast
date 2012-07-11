@@ -1,5 +1,14 @@
 // # Tsar Tnoc
-(function(){
+/*global async:true setTimeout:true document:true Image:true */
+(function(){"use strict";
+var syncFnFactory; 
+var imageSources, groundImg, contrastImg, goalImg, charImg, rockImg;
+var world;
+var Tile;
+var Unit;
+var mainCharacter;
+var drawView;
+var initView;
 
 // ## Util
 (function(){
@@ -24,12 +33,12 @@
                     callback = undefined;
                 });
             };
-        }
-    }
+        };
+    };
 })();
     
 // ## Graphic files and configuration
-(function() {    
+(function() {
     // tile files
     groundImg = './figures/grass.png';
     contrastImg = './figures/contrast.png';
@@ -63,7 +72,7 @@
             worldcache[pos] = tile;
         }
         return worldcache[pos];
-    }
+    };
 })();
     
 // ## Tile
@@ -92,11 +101,11 @@
         this.x = x;
         this.y = y;
         world.get(x,y).units[this.id] = this;
-    }
+    };
     unitPrototype.getX = function() { return this.x; };
     unitPrototype.getY = function() { return this.y; };
     unitPrototype.getZ = function() { return this.z; };
-    unitPrototype.getImages = function() { return this.images};
+    unitPrototype.getImages = function() { return this.images; };
     unitPrototype.z = 0;
     
     Unit = function(images, x, y) {
@@ -105,12 +114,12 @@
         unit.images = images;
         unit.moveTo(x,y);
         return unit;
-    }
+    };
 })();
     
 // ### Main character
 (function(){
-    mainCharacter = Unit([charImg], 0, 0);
+    mainCharacter = new Unit([charImg], 0, 0);
     
     var charSpeed = 600;
     var jumpHeight = 1;
@@ -118,14 +127,14 @@
         if(this.moving) {
             return;
         }
-        var prevx = this.x
-        var prevy = this.y
+        var prevx = this.x;
+        var prevy = this.y;
         var x = prevx + dx;
         var y = prevy + dy;
         if(!world.get(x,y).passable) {
             return;
         }
-        oiSound = document.createElement('audio'); 
+        var oiSound = document.createElement('audio'); 
         oiSound.setAttribute('src', 'audio/oi.wav'); 
         oiSound.play();
         var that = this;
@@ -143,18 +152,18 @@
         }, charSpeed);
     
         function updatePos() {
-            if(!that.moving) { return; };
+            if(!that.moving) { return; }
             var t = (Date.now() - startMove)/charSpeed;
             var currentx = prevx + t * dx;
             var currenty = prevy + t * dy;
-            var z = -4*((t-0.5)*(t-0.5)-.25)*jumpHeight;
+            var z = -4*((t-0.5)*(t-0.5)-0.25)*jumpHeight;
             that.z = z;
             that.moveTo(currentx,currenty);
         }
-        this.getX = function() { updatePos(); return this.x; }
-        this.getY = function() { updatePos(); return this.y; }
-        this.getZ = function() { updatePos(); zzz.push('t'+this.z); return this.z; }
-    }
+        this.getX = function() { updatePos(); return this.x; };
+        this.getY = function() { updatePos(); return this.y; };
+        this.getZ = function() { updatePos(); return this.z; };
+    };
 })();
     
     
@@ -170,13 +179,13 @@
             for(x = -17; x <= 17; ++x) {
                 var tile = world.get(x0+x, y0+y);
                 if(x === 0 && y === 0) {
-                    ctx.fillStyle = "rgba(255,0,0,.03)";
+                    ctx.fillStyle = "rgba(255,0,0,0.03)";
                 } else if(tile.item) {
-                    ctx.fillStyle = 'rgba(0,255,255,.03)';
+                    ctx.fillStyle = 'rgba(0,255,255,0.03)';
                 } else if(!tile.passable) {
-                    ctx.fillStyle = 'rgba(0,0,0,.03)';
+                    ctx.fillStyle = 'rgba(0,0,0,0.03)';
                 } else {
-                    ctx.fillStyle = "rgba(255,255,255,.03)";
+                    ctx.fillStyle = "rgba(255,255,255,0.03)";
                 }
                 ctx.fillRect(99 + 6*x, 99+6*y, 5, 5);
             }
@@ -200,20 +209,11 @@
     var viewWidth;
     var viewHeight;
 
-    initView = function(callback) {
-        canvas = document.getElementById('canvas');
-        ctx = canvas.getContext('2d');
-        var syncFn = syncFnFactory(callback);
-        async.forEach(imageSources, loadImage, syncFn());
-        viewWidth = canvas.width;
-        viewHeight = canvas.height;
-    }
-    
     
     // ### Utility for loading/drawing images
     
     // hashmap of loaded images
-    images = {};
+    var images = {};
     
     // load an image into the hashmap
     function loadImage(filename, callback) {
@@ -226,10 +226,18 @@
         ctx.drawImage(images[filename], x, y);
     }
     
-    // ### Actually draw the view
-    zzz = [];
+    initView = function(callback) {
+        canvas = document.getElementById('canvas');
+        ctx = canvas.getContext('2d');
+        var syncFn = syncFnFactory(callback);
+        async.forEach(imageSources, loadImage, syncFn());
+        viewWidth = canvas.width;
+        viewHeight = canvas.height;
+    };
     
+    // ### Actually draw the view
     drawView = function(xpos, ypos) {
+        var x0World, x0, y0World, y0, x, y;
     
         function toScreenX(xpos,ypos) {
             return (xpos - x0World) * tileWidth +x0;
@@ -270,24 +278,24 @@
     
         ctx.fillRect(0,0,1000,1000);
     
-        var x0 = Math.round((Math.round(xpos) - xpos - .5) * tileWidth);
-        var y0 = Math.round((Math.round(ypos) - ypos - .5) * tileHeight + world.getZ(xpos,ypos)*tileDepth);
-        var x0World = Math.round(xpos) - 3;
-        var y0World = Math.round(ypos) - 3;
+        x0 = Math.round((Math.round(xpos) - xpos - 0.5) * tileWidth);
+        y0 = Math.round((Math.round(ypos) - ypos - 0.5) * tileHeight + world.getZ(xpos,ypos)*tileDepth);
+        x0World = Math.round(xpos) - 3;
+        y0World = Math.round(ypos) - 3;
         var yi = Math.round(ypos);
         var xi = Math.round(xpos);
         var xWorld, yWorld;
     
     
-        for(var y = yi-4; y < yi+5; ++y) {
-            for(var x = xi - 3; x < xi + 4; ++x) {
+        for(y = yi-4; y < yi+5; ++y) {
+            for(x = xi - 3; x < xi + 4; ++x) {
                 drawTile(x, y);
             }
-            for(var x = xi - 3; x < xi + 4; ++x) {
+            for(x = xi - 3; x < xi + 4; ++x) {
                 drawTileUnits(x, y);
             }
         }
-    }
+    };
 })();
     
     
@@ -305,7 +313,7 @@
         } else if(keyCode===40) { // key down
             mainCharacter.move(0,1);
         }
-    }
+    };
     
     // ### Main
     initView(function(){});
@@ -334,12 +342,12 @@
             tile = world.get(current.x, current.y);
             if(!tile.visited) {
                 var freespace = 0;
-                freespace += world.get(x+1,y).passable?0:1
-                freespace += world.get(x-1,y).passable?0:1
-                freespace += world.get(x,y-1).passable?0:1
-                freespace += world.get(x,y+1).passable?0:1
-                if(freespace > 2 || (Math.random() < .6)) {
-                    tile.z = Math.random() < .05?.5: 0;
+                freespace += world.get(x+1,y).passable?0:1;
+                freespace += world.get(x-1,y).passable?0:1;
+                freespace += world.get(x,y-1).passable?0:1;
+                freespace += world.get(x,y+1).passable?0:1;
+                if(freespace > 2 || (Math.random() < 0.6)) {
+                    tile.z = Math.random() < 0.05?0.5: 0;
                     tile.passable = true;
                     tile.surface.pop();
                     tile.surface.push(groundImg);
@@ -347,7 +355,7 @@
                     next.push({x:x,y:y-1});
                     next.push({x:x-1,y:y});
                     next.push({x:x+1,y:y});
-                    if(Math.random() < .1) {
+                    if(Math.random() < 0.1) {
                         tile.surface.push(contrastImg);
                     }
                 }
