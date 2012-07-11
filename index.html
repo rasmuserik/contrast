@@ -14,6 +14,28 @@
         <link rel="icon" type="image/png" href="icon.png">
         <link rel="shortcut icon" href="icon.png">
         <style>
+            #canvas {
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                width: 600px;;
+                height: 480px;
+            }
+            #minimap{
+                position: absolute;
+                top: 0px;
+                left: 600px;
+                width: 200px;;
+                height: 200px;
+            }
+            #bar {
+                position: absolute;
+                background: gray;
+                top: 200px;
+                left: 600px;
+                width: 200px;
+                height: 280px;
+            }
         </style>
     </head>
     <body>
@@ -21,7 +43,9 @@
           <source src="audio/jazzy.ogg" type="audio/ogg" />
           <source src="audio/jazzy.mp3" type="audio/mpeg" />
         </audio> 
-        <canvas style="position:relative;top:0;left:0;" id="canvas" width="600" height="480"></canvas>
+        <canvas id="canvas" width="600" height="480"></canvas>
+        <canvas id="minimap" width="200" height="200"></canvas>
+        <div id="bar">&nbsp;</div>
         <script src="lib/async.js"></script>
         <script src="main.js"></script>
     </body>

@@ -38,10 +38,11 @@ var ground = [
     "./figures/grass.png",
     ];
 
-var contrast = 'figures/contrast.png';
+var contrast = './figures/contrast.png';
+var goal = './figures/blueyellow.png';
 var items = [
     contrast,
-    'figures/blueyellow.png',
+    goal,
     './figures/rock.png'];
 var chars = [
     './figures/char.png'];
@@ -104,8 +105,6 @@ function Unit(img, x, y) {
     return unit;
 }
 
-Unit('figures/blueyellow.png', 0, 0);
-
 // ### Main character
 var mainCharacter = Unit("./figures/char.png", 0, 0);
 
@@ -155,6 +154,37 @@ mainCharacter.move = function(dx,dy) {
 
 
 // ## Sound Effects
+
+
+// ## Minimap
+function updateMiniMap() {
+    var minimap = document.getElementById('minimap');
+    var ctx = minimap.getContext('2d');
+    var x, y;
+    var x0 = Math.round(mainCharacter.getX()); 
+    var y0 = Math.round(mainCharacter.getY());
+    ctx.fillStyle = 'rgba(0,0,0,.03)';
+    ctx.fillRect(0,0,200,200);
+    for(y = -20; y <= 20; ++y) {
+        for(x = -20; x <= 20; ++x) {
+            var tile = world.get(x0+x, y0+y);
+            if(tile.passable) {
+                ctx.fillStyle = "#fff";
+                ctx.fillRect(99 + 6*x, 99+6*y, 5, 5);
+            }
+                
+            if(tile.item) {
+                ctx.fillStyle = '#0cc';
+                ctx.fillRect(100 + 6*x, 100+6*y, 3, 3);
+            }
+
+        }
+    }
+    ctx.fillStyle = "#f00";
+    ctx.fillRect(100,100,3,3);
+    setTimeout(updateMiniMap, 100);
+}
+updateMiniMap();
 
 // ## View
 // view of 6x6 view
@@ -289,36 +319,40 @@ drawLoop();
 function makeMaze() {
     var next = [{x:0,y:0}];
     var i;
-    for(i=0;i<1000;++i) {
+    var tile;
+    for(i=0;i<4000;++i) {
         var curpos = (1 - Math.random() * Math.random() * Math.random() * Math.random()) * next.length % next.length |0;
         var current = next[curpos];
         var x = current.x;
         var y = current.y;
         next[curpos] = next.pop();
-        var tile = world.get(current.x, current.y);
+        tile = world.get(current.x, current.y);
         if(!tile.visited) {
             var freespace = 0;
             freespace += world.get(x+1,y).passable?0:1
             freespace += world.get(x-1,y).passable?0:1
             freespace += world.get(x,y-1).passable?0:1
             freespace += world.get(x,y+1).passable?0:1
-            if(freespace > 2 || (Math.random() < 0.5)) {
+            if(freespace > 2 || (Math.random() < .6)) {
                 ctx.fillRect(250+x, 250+y,1,1);
                 tile.z = Math.random() < .05?.5: 0;
                 tile.passable = true;
                 tile.surface.pop();
                 tile.surface.push('./figures/grass.png');
-                next.push({x:x+1,y:y});
-                next.push({x:x-1,y:y});
                 next.push({x:x,y:y+1});
                 next.push({x:x,y:y-1});
-                if(Math.random() < .3) {
+                next.push({x:x-1,y:y});
+                next.push({x:x+1,y:y});
+                if(Math.random() < .1) {
                     tile.surface.push(contrast);
                 }
             }
             tile.visited = true;
         }
     }
+    tile.passable = true;
+    tile.surface = ['./figures/grass.png', goal];
+    tile.item = true;
 }
 makeMaze();
 
