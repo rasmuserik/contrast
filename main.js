@@ -65,10 +65,10 @@ var initView;
         var pos = Math.round(x) + ',' + Math.round(y);
         if(!worldcache[pos]) {
             var tile = Object.create(Tile);
-            tile.surface = [];
+            tile.images = [];
             tile.units = {};
             tile.z = Math.random();
-            tile.surface.push(rockImg);
+            tile.images.push(rockImg);
             worldcache[pos] = tile;
         }
         return worldcache[pos];
@@ -78,7 +78,7 @@ var initView;
 // ## Tile
 (function(){
     Tile = {};
-    Tile.getSurfaceImages = function() { return this.surface; };
+    Tile.getImages = function() { return this.images; };
     Tile.getZ = function() { return this.z; };
 })();
     
@@ -145,8 +145,8 @@ var initView;
             that.moveTo(x, y);
             that.z = 0;
             that.moving = false;
-            if(world.get(x,y).surface[1] === contrastImg) {
-                world.get(x,y).surface.pop();
+            if(world.get(x,y).images[1] === contrastImg) {
+                world.get(x,y).images.pop();
             }
     
         }, charSpeed);
@@ -252,9 +252,9 @@ var initView;
         function drawTile(x,y) {
             var i;
             var tile = world.get(x,y);
-            var surface = tile.getSurfaceImages();
-            for(i = 0; i < surface.length; ++i) {
-                drawImage(surface[i], toScreenX(x,y), toScreenY(x,y));
+            var images = tile.getImages();
+            for(i = 0; i < images.length; ++i) {
+                drawImage(images[i], toScreenX(x,y), toScreenY(x,y));
             }
         }
     
@@ -349,24 +349,95 @@ var initView;
                 if(freespace > 2 || (Math.random() < 0.6)) {
                     tile.z = Math.random() < 0.05?0.5: 0;
                     tile.passable = true;
-                    tile.surface.pop();
-                    tile.surface.push(groundImg);
+                    tile.images.pop();
+                    tile.images.push(groundImg);
                     next.push({x:x,y:y+1});
                     next.push({x:x,y:y-1});
                     next.push({x:x-1,y:y});
                     next.push({x:x+1,y:y});
                     if(Math.random() < 0.1) {
-                        tile.surface.push(contrastImg);
+                        tile.images.push(contrastImg);
                     }
                 }
                 tile.visited = true;
             }
         }
         tile.passable = true;
-        tile.surface = [groundImg, goalImg];
+        tile.images = [groundImg, goalImg];
         tile.item = true;
     }
     makeMaze();
+})();
+
+// ## Generate heightmap
+(function(){
+    // ## Diamond-square algorithm
+    function diamondSquare(size, rnd) {
+        var step, x, y, sizeMask, result;
+        // Sanitise parameters
+        if(size & (size-1) !== 0) {
+            throw {error: 'size parameter must be a power of two'};
+        }
+        if(typeof rnd !== 'function') {
+            rnd = function(scale) {
+                return (Math.random()-0.5) * scale;
+            };
+        }
+    
+        // The array which will contain the fractal.
+        // Initialisation of the first parameter is the base height of the fractal.
+        result = [0];
+    
+        // Precalculated mask for module when out of boundaries.
+        sizeMask = size - 1;
+    
+        // Shorthand function for getting a xy-element of the result array.
+        function get(x,y) {
+            return result[(x&sizeMask)+(y&sizeMask)*size];
+        }
+    
+        for(step = size; step > 0; step >>= 1) {
+            var prevStepMask = (step<<1) - 1;
+            // Square part of the algorithm
+            for(x = 0; x < size; x += step) {
+                for(y = 0; y < size; y += step) {
+                    if((y&prevStepMask) && (x&prevStepMask)) {
+                        result[x+y*size] = (
+                                get(x-step, y-step) +
+                                get(x+step, y+step) +
+                                get(x+step,y-step) +
+                                get(x-step,y+step))/4 + rnd(step);
+                    }
+                }
+            }
+            // Diamond part of the algorithm
+            for(x = 0; x < size; x += step) {
+                for(y = 0; y < size; y += step) {
+                    if( (!(y&prevStepMask) && (x&prevStepMask)) ||
+                        (!(x&prevStepMask) && (y&prevStepMask))) {
+                        result[x+y*size] = (
+                                get(x-step, y) +
+                                get(x+step, y) +
+                                get(x,y-step) +
+                                get(x,y+step))/4 + rnd(step);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+    function makeHeightWorld(size) {
+        var heights = diamondSquare(size);
+        for(var x = 0; x < size; ++x) {
+            for(var y = 0; y < size; ++y) {
+                var tile = world.get(x-size/2,y-size/2);
+                tile.z = Math.round(heights[x+y*size])/2;
+                tile.images=[groundImg];
+                tile.passable=true;
+            }
+        }
+    }
+    //makeHeightWorld(256);
 })();
     
 // # EOF
