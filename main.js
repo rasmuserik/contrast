@@ -122,10 +122,9 @@ var makeMaze;
         unit.moveTo(x,y);
         return unit;
     };
-})();
+
     
 // ### Main character
-(function(){
     mainCharacter = new Unit([charImg], 0, 0);
     
     var charSpeed = 600;
@@ -399,7 +398,7 @@ var updateStatus = function() {
     drawLoop();
 })();
 function restartGame() {
-    level = -1;
+    level = 10;
     lives = 3;
     world.clear();
     mainCharacter.moveTo(0,0);
