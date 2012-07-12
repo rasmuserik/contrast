@@ -2,13 +2,16 @@
 /*global async:true setTimeout:true document:true Image:true */
 (function(){"use strict";
 var syncFnFactory; 
-var imageSources, groundImg, contrastImg, goalImg, charImg, rockImg;
+var imageSources, groundImg, contrastImg, goalImg, charImg, rockImg, enemyImg;
 var world;
 var Tile;
 var Unit;
 var mainCharacter;
 var drawView;
 var initView;
+var doAction;
+var level, contrastsTotal, contrastsTaken, lives;
+var makeMaze;
 
 // ## Util
 (function(){
@@ -44,13 +47,17 @@ var initView;
     contrastImg = './figures/contrast.png';
     goalImg = './figures/blueyellow.png';
     charImg = './figures/char.png';
+    enemyImg = './figures/evil.png';
     rockImg = './figures/rock.png';
-    imageSources = [rockImg, groundImg, contrastImg, goalImg, charImg];
+    imageSources = [rockImg, groundImg, contrastImg, goalImg, charImg, enemyImg];
     
     // ### Random dummy world
     world = {};
 
     var worldcache = {};
+    world.clear = function() {
+        worldcache = {};
+    }
     world.getZ = function(xpos,ypos) {
         var x = Math.floor(xpos);
         var y = Math.floor(ypos);
@@ -146,8 +153,15 @@ var initView;
             that.z = 0;
             that.moving = false;
             if(world.get(x,y).images[1] === contrastImg) {
+                contrastsTaken++;
+                if(contrastsTaken === contrastsTotal) {
+                    nextLevel();
+                }
+                updateStatus();
+                world.get(x,y).item = false;
                 world.get(x,y).images.pop();
             }
+            doAction();
     
         }, charSpeed);
     
@@ -166,6 +180,15 @@ var initView;
     };
 })();
     
+// ## Status bar
+var updateStatus = function() {
+    document.getElementById('status').innerHTML =
+        'Contrasts: <sup>' + contrastsTaken +
+        '</sup>/<sub>' + contrastsTotal + '</sub><br/>' +
+        'Lives left: ' + lives + '<br/>' +
+        'Level: ' + level;
+};
+
     
 // ## Minimap
 (function(){
@@ -179,13 +202,13 @@ var initView;
             for(x = -17; x <= 17; ++x) {
                 var tile = world.get(x0+x, y0+y);
                 if(x === 0 && y === 0) {
-                    ctx.fillStyle = "rgba(255,0,0,0.03)";
+                    ctx.fillStyle = "rgba(255,0,0,1)";
                 } else if(tile.item) {
-                    ctx.fillStyle = 'rgba(0,255,255,0.03)';
+                    ctx.fillStyle = 'rgba(0,255,255,1)';
                 } else if(!tile.passable) {
-                    ctx.fillStyle = 'rgba(0,0,0,0.03)';
+                    ctx.fillStyle = 'rgba(0,0,0,1)';
                 } else {
-                    ctx.fillStyle = "rgba(255,255,255,0.03)";
+                    ctx.fillStyle = "rgba(255,255,255,1)";
                 }
                 ctx.fillRect(99 + 6*x, 99+6*y, 5, 5);
             }
@@ -301,18 +324,68 @@ var initView;
     
 // ## Controller
 (function(){
+    
+    var currentAction;
+    doAction = function() {
+        if(currentAction === 'down') {
+            mainCharacter.move(0,1);
+        } else if(currentAction === 'up') {
+            mainCharacter.move(0,-1);
+        } else if(currentAction === 'left') {
+            mainCharacter.move(-1,0);
+        } else if(currentAction === 'right') {
+            mainCharacter.move(1,0);
+        }
+    }
+
+    var buttonelem = document.getElementById('buttons');
+    buttonelem.onmouseout = function() { currentAction = undefined; };
+    buttonelem.onmouseup = function() { currentAction = undefined; };
+    buttonelem.ontouchend = function() { currentAction = undefined; };
+    buttonelem.ontouchstart = function(ev) { 
+        ev = ev || window.event;
+        var x = (ev.clientX || ev.touches[0].clientX) - 600;
+        var y = (ev.clientY || ev.touches[0].clientY) - 280;
+        if(x+y < 200) {
+            if(x<y) {
+                currentAction = 'left';
+            } else {
+                currentAction = 'up';
+            }
+        } else {
+            if(x<y) {
+                currentAction = 'down';
+            } else {
+                currentAction = 'right';
+            }
+        }
+        doAction();
+        ev.preventDefault && ev.preventDefault();
+        ev.stopPropagation && ev.stopPropagation();
+        ev.cancelBubble = true;
+        ev.returnValue = false;
+        return false;
+    };
+    buttonelem.onmousedown = buttonelem.ontouchstart;
+    /* buttonelem.onmousemove = function(ev) {
+        if(currentAction) {
+            return buttonelem.ontouchstart(ev);
+        }
+    }
+    buttonelem.ontouchmove = buttonelem.ontouchstart; */
+
+    
     document.body.onkeydown = function(ev) {
         //console.log(ev.keyCode);
         var keyCode = ev.keyCode;
-        if(keyCode===37) { // key left
-            mainCharacter.move(-1,0);
-        } else if(keyCode===39) { // key right
-            mainCharacter.move(1,0);
-        } else if(keyCode===38) { // key up
-            mainCharacter.move(0,-1);
-        } else if(keyCode===40) { // key down
-            mainCharacter.move(0,1);
-        }
+        if(keyCode===37) { currentAction = 'left'; }
+        if(keyCode===38) { currentAction = 'up'; }
+        if(keyCode===39) { currentAction = 'right'; }
+        if(keyCode===40) { currentAction = 'down'; }
+        doAction();
+    };
+    document.body.onkeyup = function(ev) {
+        currentAction = undefined;
     };
     
     // ### Main
@@ -325,16 +398,30 @@ var initView;
     }
     drawLoop();
 })();
+function restartGame() {
+    level = -1;
+    lives = 3;
+    world.clear();
+    mainCharacter.moveTo(0,0);
+    nextLevel();
+}
+
+function nextLevel() {
+    ++level;
+    makeMaze();
+}
+
     
     
 // ## Generate maze
 (function(){
-    function makeMaze() {
-        var next = [{x:0,y:0}];
+    var next = [{x:0,y:0}];
+    makeMaze = function() {
+        contrastsTotal = contrastsTaken = 0;
         var i;
         var tile;
-        for(i=0;i<1000;++i) {
-            var curpos = (1 - Math.random() * Math.random() * Math.random() * Math.random()) * next.length % next.length |0;
+        for(i=0;i<30;++i) {
+            var curpos = (1 - Math.random() * Math.random() * Math.random()) * next.length % next.length |0;
             var current = next[curpos];
             var x = current.x;
             var y = current.y;
@@ -346,7 +433,7 @@ var initView;
                 freespace += world.get(x-1,y).passable?0:1;
                 freespace += world.get(x,y-1).passable?0:1;
                 freespace += world.get(x,y+1).passable?0:1;
-                if(freespace > 2 || (Math.random() < 0.6)) {
+                if(freespace > 2 || (Math.random() < 0.8)) {
                     tile.z = Math.random() < 0.05?0.5: 0;
                     tile.passable = true;
                     tile.images.pop();
@@ -355,18 +442,23 @@ var initView;
                     next.push({x:x,y:y-1});
                     next.push({x:x-1,y:y});
                     next.push({x:x+1,y:y});
-                    if(Math.random() < 0.1) {
+                    if(Math.random() < level * 0.01) {
+                        new Unit([enemyImg], x,y);
+                    }
+                    if(Math.random() < 0.2) {
                         tile.images.push(contrastImg);
+                        tile.item = true;
+                        contrastsTotal++;
                     }
                 }
                 tile.visited = true;
             }
         }
-        tile.passable = true;
-        tile.images = [groundImg, goalImg];
-        tile.item = true;
+        if(contrastsTotal === 0) {
+            makeMaze();
+        }
+        updateStatus();
     }
-    makeMaze();
 })();
 
 // ## Generate heightmap
@@ -439,6 +531,8 @@ var initView;
     }
     //makeHeightWorld(256);
 })();
+
+restartGame();
     
 // # EOF
 })();

@@ -7,9 +7,7 @@ Game+engine is made from scratch...
 ## Notes
 - todo
     - on-click map to which world coordinate clicked
-    - better key controls, ie move-done+button-down -> move
     - mapping from touch/mouse-up/down in view -> tile/object-event
-    - mobile controls
     - menu
     - pop-up dialog
     - height-map-map-generator
@@ -25,6 +23,8 @@ Game+engine is made from scratch...
 ## Dev notes/history
 
 - Jul 11
+    - better key controls, ie move-done+button-down -> move
+    - mobile controls
     - code cleanup
     - motion-blurred minimap
 - Jul 10

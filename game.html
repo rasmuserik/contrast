@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Tsar Tnoc</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+        <meta name="format-detection" content="telephone=no">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <link rel="apple-touch-icon-precomposed" href="icon.png">
+        <link rel="icon" type="image/png" href="icon.png">
+        <link rel="shortcut icon" href="icon.png">
+        <style>
+            body {
+                background: url('background.jpg');
+            }
+            #canvas {
+                position: absolute;
+                top: 0px;
+                left: 0px;
+                width: 600px;;
+                height: 480px;
+            }
+            #minimap{
+                position: absolute;
+                top: 0px;
+                left: 600px;
+                width: 200px;;
+                height: 200px;
+            }
+            #buttons{
+                position: absolute;
+                background: url("buttons.png");
+                top: 280px;
+                left: 600px;
+                width: 200px;
+                height: 200px;
+            }
+            #status{
+                position:absolute;
+                top:200px;
+                left:600px;
+                text-shadow: 2px 0px 4px white, -2px 0px 4px white, 0px 2px 4px white, 0px -2px 4px white;
+                font-family: sans-serif;
+                font-size: 18px;
+                text-align: center;
+                width:200px;
+                height: 80px;
+                margin-top: 4px;
+            }
+        </style>
+    </head>
+    <body>
+        <audio autoplay="autoplay" loop="loop">
+          <source src="audio/jazzy.ogg" type="audio/ogg" />
+          <source src="audio/jazzy.mp3" type="audio/mpeg" />
+        </audio> 
+        <canvas id="canvas" width="600" height="480"></canvas>
+        <canvas id="minimap" width="200" height="200"></canvas>
+        <div id="status">Contrasts: <sup>5</sup>/<sub>18</sub><br/>Lives left: 3<br/>Level: 3<br/></div>
+        <div id="buttons"></div>
+        <script src="lib/async.js"></script>
+        <script src="main.js"></script>
+    </body>
+</html>
