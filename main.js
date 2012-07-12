@@ -4,14 +4,18 @@
 var syncFnFactory; 
 var imageSources, groundImg, contrastImg, goalImg, charImg, rockImg, enemyImg;
 var world;
+var playing;
 var Tile;
 var Unit;
+var fadeToRed;
 var mainCharacter;
 var drawView;
 var initView;
 var doAction;
 var level, contrastsTotal, contrastsTaken, lives;
+var newMaze;
 var makeMaze;
+var EvilChar;
 
 // ## Util
 (function(){
@@ -123,6 +127,51 @@ var makeMaze;
         return unit;
     };
 
+    var evilSpeed = 800;
+    function checkCollision() {
+    }
+    EvilChar = function(x,y) {
+        var evil = new Unit([enemyImg], x,y);
+        var nextX = x, nextY = y, lastTime = Date.now();
+        function updatePos() {
+            var t = Date.now() - lastTime;
+            var distEnd = Math.abs(.5 - t / evilSpeed);
+            evil.z = 1 - 4* distEnd * distEnd;
+            evil.moveTo((nextX * t + (evilSpeed-t) * x)/evilSpeed, (nextY * t + (evilSpeed-t) * y)/evilSpeed);
+
+        }
+        evil.getX = function() { updatePos(); return this.x; }
+        evil.getY = function() { updatePos(); return this.y; }
+        function moveEvil() {
+
+            world.get(x,y).evil = false;
+            x = nextX; y = nextY;
+            world.get(x,y).evil = true;
+            evil.moveTo(x,y);
+            lastTime = Date.now();
+
+            var tile = world.get(x,y);
+            if(tile.units[mainCharacter.id]) {
+                die();
+            }
+
+            nextX += Math.round(Math.random() * 1.2 - 0.6);
+            nextY += Math.round(Math.random() * 1.2 - 0.6);
+            //console.log(x,y,nextX,nextY);
+            tile = world.get(nextX, nextY);
+            if(tile.evil || !tile.passable) {
+                nextX = x; nextY = y;
+            }
+            if(x === nextX && y === nextY && Math.random() < .9) { 
+                moveEvil(); 
+            } else {
+                if(playing) setTimeout(moveEvil, evilSpeed);
+            }
+        }
+        moveEvil();
+
+        return evil;
+    }
     
 // ### Main character
     mainCharacter = new Unit([charImg], 0, 0);
@@ -184,7 +233,6 @@ var updateStatus = function() {
     document.getElementById('status').innerHTML =
         'Contrasts: <sup>' + contrastsTaken +
         '</sup>/<sub>' + contrastsTotal + '</sub><br/>' +
-        'Lives left: ' + lives + '<br/>' +
         'Level: ' + level;
 };
 
@@ -231,7 +279,7 @@ var updateStatus = function() {
     var viewWidth;
     var viewHeight;
 
-    
+
     // ### Utility for loading/drawing images
     
     // hashmap of loaded images
@@ -318,11 +366,20 @@ var updateStatus = function() {
             }
         }
     };
+
+    fadeToRed = function() {
+        for(var i = 0; i <1000; ++i) {
+            ctx.fillStyle= 'rgba(' +(Math.random() * 256 |0) +',0,0,0.3)';
+            ctx.fillRect(Math.random()*600, Math.random() * 480, 2, 2);
+        }
+        if(!playing) {
+            setTimeout(fadeToRed, 10);
+        }
+    }
 })();
     
     
 // ## Controller
-(function(){
     
     var currentAction;
     doAction = function() {
@@ -393,16 +450,25 @@ var updateStatus = function() {
     function drawLoop() {
         drawView(mainCharacter.getX(), mainCharacter.getY());
         //drawView(0,0);
-        setTimeout(drawLoop, 30);
+        if(playing) setTimeout(drawLoop, 30);
     }
-    drawLoop();
-})();
 function restartGame() {
-    level = 10;
+    playing = true;
+    level = -1;
     lives = 3;
     world.clear();
     mainCharacter.moveTo(0,0);
+    newMaze();
     nextLevel();
+    drawLoop();
+}
+function die() {
+    playing = false;
+    setTimeout(restartGame, 10000);
+    fadeToRed();
+    var arghSound = document.createElement('audio'); 
+    arghSound.setAttribute('src', 'audio/aarrgghh.wav'); 
+    arghSound.play();
 }
 
 function nextLevel() {
@@ -414,7 +480,11 @@ function nextLevel() {
     
 // ## Generate maze
 (function(){
-    var next = [{x:0,y:0}];
+    var next;
+
+    newMaze = function() {
+        next = [{x:0,y:0}];
+    }
     makeMaze = function() {
         contrastsTotal = contrastsTaken = 0;
         var i;
@@ -441,8 +511,8 @@ function nextLevel() {
                     next.push({x:x,y:y-1});
                     next.push({x:x-1,y:y});
                     next.push({x:x+1,y:y});
-                    if(Math.random() < level * 0.01) {
-                        new Unit([enemyImg], x,y);
+                    if(Math.random() < level * 0.03) {
+                        new EvilChar(x,y);
                     }
                     if(Math.random() < 0.2) {
                         tile.images.push(contrastImg);
