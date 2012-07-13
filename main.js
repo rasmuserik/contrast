@@ -1,8 +1,8 @@
 // # Tsar Tnoc
-/*global async:true setTimeout:true document:true Image:true */
+/*global async:true setTimeout:true document:true Image:true groundImg:true contrastImg:true charImg:true rockImg:true enemyImg:true */
 (function(){"use strict";
 var syncFnFactory; 
-var imageSources, groundImg, contrastImg, goalImg, charImg, rockImg, enemyImg;
+var imageSources; 
 var world;
 var playing;
 var Tile;
@@ -47,13 +47,7 @@ var EvilChar;
 // ## Graphic files and configuration
 (function() {
     // tile files
-    groundImg = './figures/grass.png';
-    contrastImg = './figures/contrast.png';
-    goalImg = './figures/blueyellow.png';
-    charImg = './figures/char.png';
-    enemyImg = './figures/evil.png';
-    rockImg = './figures/rock.png';
-    imageSources = [rockImg, groundImg, contrastImg, goalImg, charImg, enemyImg];
+    imageSources = [rockImg, groundImg, contrastImg, charImg, enemyImg];
     
     // ### Random dummy world
     world = {};
