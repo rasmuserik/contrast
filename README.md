@@ -1,1 +1,1 @@
-# More info at <http://solsort.dk/MiniLD_36:_Contrasts
+![logo](https://solsort.com/_logo.png) MiniLD#36 entry
